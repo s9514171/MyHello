@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -104,24 +105,16 @@ class SimpleAdmin implements Admin {
     // output all tables to disk
     HelloFile taOut = new HelloFile("db.txt");
     taOut.writeInt(tables.size());
-//    taOut.write(BytesUtil.toBytes(tables.size() + "\n"));
     List<String> ta = listTables();
     byte[] b;
     for (String item : ta) {
       b = item.getBytes();
       taOut.writeInt(b.length);
       taOut.write(b);
-//      taOut.write((item + "\n").getBytes());
-
       SimpleTable cellTable = (SimpleTable) openTable(item);
       cellTable.outputCellToDisk();
     }
     taOut.close();
-    /*
-    for (Map.Entry<Cell, Cell> entry : data.entrySet()) {
-      meta.write(BytesUtil.toBytes(new String(entry.getValue().getRowArray()) + ", " + new String(entry.getValue().getColumnArray()) + ", " + entry.getValue().getDataOffset() + ", " + entry.getValue().getDataLength() + "\n"));
-      //System.out.println("Offset: "+entry.getValue().getDataOffset());
-    }*/
   }
 
   private static class SimpleTable implements Table {
@@ -144,8 +137,7 @@ class SimpleAdmin implements Admin {
 
       HelloFile cellOut = new HelloFile(this.name);
       cellOut.writeInt(data.size());
-//      System.out.println(data.size());
-//      cellOut.write((data.size() + "\n").getBytes());
+
       for (Map.Entry<Cell, Cell> entry : data.entrySet()) {
         cellOut.writeInt(entry.getValue().getRowLength());
         cellOut.write(entry.getValue().getRowArray());
@@ -153,16 +145,14 @@ class SimpleAdmin implements Admin {
         cellOut.write(entry.getValue().getColumnArray());
         cellOut.writeLong(entry.getValue().getDataOffset());
         cellOut.writeInt(entry.getValue().getDataLength());
-        //cellOut.write((new String(entry.getValue().getRowArray()) + ", " + new String(entry.getValue().getColumnArray()) + ", " + entry.getValue().getDataOffset() + ", " + entry.getValue().getDataLength() + "\n").getBytes());
-        //System.out.println("Offset: "+entry.getValue().getDataOffset());
       }
 
     }
 
     @Override
     public boolean insert(Cell cell) throws IOException {
-
-      Cell newCell = Cell.createRowColumnOnly(cell.getRowArray(), cell.getColumnArray());
+      Cell newCell = Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
+              Arrays.copyOfRange(cell.getColumnArray(), cell.getColumnOffset(), cell.getColumnOffset() + cell.getColumnLength()));
       newCell.setDataLength(cell.getValueLength());
       newCell.setDataOffset(file.write(cell.getValueArray()));
 
@@ -218,7 +208,8 @@ class SimpleAdmin implements Admin {
 
     @Override
     public boolean insertIfAbsent(Cell cell) throws IOException {
-      Cell newCell = Cell.createRowColumnOnly(cell.getRowArray(), cell.getColumnArray());
+      Cell newCell = Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
+              Arrays.copyOfRange(cell.getColumnArray(), cell.getColumnOffset(), cell.getColumnOffset() + cell.getColumnLength()));
       newCell.setDataLength(cell.getValueLength());
       newCell.setDataOffset(file.write(cell.getValueArray()));
 

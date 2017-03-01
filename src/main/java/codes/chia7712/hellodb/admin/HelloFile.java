@@ -37,7 +37,6 @@ public class HelloFile {
       raf.readFully(b);
     } catch (IOException ex) {
       Logger.getLogger(HelloFile.class.getName()).log(Level.SEVERE, null, ex);
-      //System.out.println("errorRead");
     }
   }
 
@@ -64,9 +63,6 @@ public class HelloFile {
     } catch (FileNotFoundException ex) {
       Logger.getLogger(HelloFile.class.getName()).log(Level.SEVERE, null, ex);
     }
-    /*catch (IOException ex) {
-    Logger.getLogger(HelloFile.class.getName()).log(Level.SEVERE, null, ex);
-    }*/
   }
 
   public void writeLong(Long v) throws IOException {
