@@ -1,14 +1,11 @@
 package codes.chia7712.hellodb.admin;
 
 import codes.chia7712.hellodb.Table;
-import codes.chia7712.hellodb.data.BytesUtil;
 import codes.chia7712.hellodb.data.Cell;
 import codes.chia7712.hellodb.data.CellComparator;
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -30,19 +27,19 @@ class SimpleAdmin implements Admin {
 
   SimpleAdmin() {
     try {
-      BufferedReader br = new BufferedReader(new FileReader(new File("db.txt")));
-      String line = null;
-
-      //SimpleTable table = (SimpleTable) openTable("usertable");
-      while ((line = br.readLine()) != null) {
-        int count = Integer.parseInt(line);
-        for (int i = 0; i < count; i++) {
-          String tableName = br.readLine();
-          createTable(tableName);
-          loadDataToTable((SimpleTable) openTable(tableName));
-        }
+      RandomAccessFile raf = new RandomAccessFile("db.txt", "r");
+      raf.seek(0);
+      int n = raf.readInt();
+      byte[] b;
+      String tableName;
+      for (int i = 0; i < n; i++) {
+        b = new byte[raf.readInt()];
+        raf.read(b);
+        tableName = new String(b);
+        createTable(tableName);
+        loadDataToTable((SimpleTable) openTable(tableName));
       }
-      br.close();
+      raf.close();
     } catch (IOException ex) {
       System.out.println("MetaData not found!");
     }
@@ -51,23 +48,20 @@ class SimpleAdmin implements Admin {
 
   private void loadDataToTable(SimpleTable table) throws FileNotFoundException, IOException {
 
-    BufferedReader br = new BufferedReader(new FileReader(new File(table.name)));
-    String line = null;
-
-    //SimpleTable table = (SimpleTable) openTable("usertable");
-    while ((line = br.readLine()) != null) {
-      int count = Integer.parseInt(line);
-      for (int i = 0; i < count; i++) {
-        String[] tok = br.readLine().split(", ");
-        Cell newCell = Cell.createRowColumnOnly(tok[0].getBytes(), tok[1].getBytes());
-        newCell.setDataOffset(Long.parseLong(tok[2]));
-        newCell.setDataLength(Integer.parseInt(tok[3]));
-        //table.data.put(newCell, newCell);
-        table.putCell(newCell);
-      }
+    RandomAccessFile raf = new RandomAccessFile(table.name, "r");
+    raf.seek(0);
+    byte[] r, c;
+    int n = raf.readInt();
+    for (int i = 0; i < n; i++) {
+      r = new byte[raf.readInt()];
+      raf.read(r);
+      c = new byte[raf.readInt()];
+      raf.read(c);
+      Cell newCell = Cell.createRowColumnOnly(r, c);
+      newCell.setDataOffset(raf.readLong());
+      newCell.setDataLength(raf.readInt());
+      table.putCell(newCell);
     }
-
-    //return data.put(newCell, newCell) != null;
   }
 
   @Override
@@ -109,10 +103,15 @@ class SimpleAdmin implements Admin {
   public void close() throws IOException {
     // output all tables to disk
     HelloFile taOut = new HelloFile("db.txt");
-    taOut.write(BytesUtil.toBytes(tables.size() + "\n"));
+    taOut.writeInt(tables.size());
+//    taOut.write(BytesUtil.toBytes(tables.size() + "\n"));
     List<String> ta = listTables();
+    byte[] b;
     for (String item : ta) {
-      taOut.write((item + "\n").getBytes());
+      b = item.getBytes();
+      taOut.writeInt(b.length);
+      taOut.write(b);
+//      taOut.write((item + "\n").getBytes());
 
       SimpleTable cellTable = (SimpleTable) openTable(item);
       cellTable.outputCellToDisk();
@@ -142,12 +141,22 @@ class SimpleAdmin implements Admin {
 
     private void outputCellToDisk() throws IOException {
       // output cells to disk
+
       HelloFile cellOut = new HelloFile(this.name);
-      cellOut.write((data.size() + "\n").getBytes());
+      cellOut.writeInt(data.size());
+//      System.out.println(data.size());
+//      cellOut.write((data.size() + "\n").getBytes());
       for (Map.Entry<Cell, Cell> entry : data.entrySet()) {
-        cellOut.write((new String(entry.getValue().getRowArray()) + ", " + new String(entry.getValue().getColumnArray()) + ", " + entry.getValue().getDataOffset() + ", " + entry.getValue().getDataLength() + "\n").getBytes());
+        cellOut.writeInt(entry.getValue().getRowLength());
+        cellOut.write(entry.getValue().getRowArray());
+        cellOut.writeInt(entry.getValue().getColumnLength());
+        cellOut.write(entry.getValue().getColumnArray());
+        cellOut.writeLong(entry.getValue().getDataOffset());
+        cellOut.writeInt(entry.getValue().getDataLength());
+        //cellOut.write((new String(entry.getValue().getRowArray()) + ", " + new String(entry.getValue().getColumnArray()) + ", " + entry.getValue().getDataOffset() + ", " + entry.getValue().getDataLength() + "\n").getBytes());
         //System.out.println("Offset: "+entry.getValue().getDataOffset());
       }
+
     }
 
     @Override

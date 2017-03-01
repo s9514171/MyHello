@@ -30,10 +30,9 @@ public class entry {
       //Table table2 = new SimpleAdmin().openTable("usertable");
       Table table = admin.openTable("usertable");
       
-      //for (int i = 0 ;i<10000;i++) {
-        table.insert(Cell.createCell(("row" + 1).getBytes(), ("col" + 2).getBytes(), ("val" + 2).getBytes()));
-        table.insert(Cell.createCell(("row" + 3).getBytes(), ("col" + 2).getBytes(), ("val" + 2).getBytes()));
-      //}
+      for (int i = 0 ;i<10000;i++) {
+        table.insert(Cell.createCell(("row" + i).getBytes(), ("col" + i).getBytes(), ("val" + i).getBytes()));
+      }
       
       /*byte[] t1 = BytesUtil.toBytes("row");
       byte[] t2 = BytesUtil.toBytes("col");

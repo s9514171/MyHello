@@ -63,12 +63,24 @@ public class HelloFile {
       this.offset = 0;//raf.length();
     } catch (FileNotFoundException ex) {
       Logger.getLogger(HelloFile.class.getName()).log(Level.SEVERE, null, ex);
-    } /*catch (IOException ex) {
+    }
+    /*catch (IOException ex) {
     Logger.getLogger(HelloFile.class.getName()).log(Level.SEVERE, null, ex);
     }*/
+  }
+
+  public void writeLong(Long v) throws IOException {
+    raf.writeLong(v);
+    this.offset += Long.BYTES;
+  }
+
+  public void writeInt(int v) throws IOException {
+    raf.writeInt(v);
+    this.offset += Integer.BYTES;
   }
 
   public void close() throws IOException {
     raf.close();
   }
+
 }
