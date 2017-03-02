@@ -8,6 +8,7 @@ package codes.chia7712.hellodb.admin;
 import codes.chia7712.hellodb.Table;
 import codes.chia7712.hellodb.data.Cell;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,10 +30,24 @@ public class entry {
       //Table table2 = new SimpleAdmin().openTable("usertable");
       Table table = admin.openTable("usertable");
 
-      for (int i = 0; i < 100000; i++) {
-        table.insert(Cell.createCell(("row" + i).getBytes(), ("col" + i).getBytes(), ("val" + i).getBytes()));
-      }
-
+//      for (int i = 0; i < 100000; i++) {
+//        table.insert(Cell.createCell(("row" + i).getBytes(), ("col" + i).getBytes(), ("val" + i).getBytes()));
+//      }
+      byte[] t1 = "row1".getBytes();
+      byte[] t2 = "col1".getBytes();
+      byte[] t3 = "val1".getBytes();
+//      System.out.println(table.insert(Cell.createCell(t2, t1, t3)));
+//      System.out.println(table.insert(Cell.createCell(t1, t2, t3)));
+//      System.out.println(table.insert(Cell.createCell(t3, t2, t3)));
+//      System.out.println(table.insert(Cell.createCell(t1, t3, t3)));
+      System.out.println(table.insert(Cell.createCell(t1, t1, t3)));
+      System.out.println(table.insert(Cell.createCell(t1, t3, t1)));
+      System.out.println(table.insert(Cell.createCell(t3, t1, t3)));
+      System.out.println(table.insert(Cell.createCell(t1, 1, 3, t1, 1, 3, t2, 0, 3)));
+      System.out.println(table.insertIfAbsent(Cell.createCell(t1, 1, 3, t1, 1, 3, t2, 1, 1)));
+      System.out.println(table.insertIfAbsent(Cell.createCell(t1, 1, 3, t1, 1, 3, t2, 1, 1)));
+      Optional<Cell> a = table.get("ow1".getBytes(), "ow1".getBytes());
+      System.out.println(new String(a.get().getValueArray()));
       table.close();
       admin.close();
 //      byte[] t1 = BytesUtil.toBytes("row");

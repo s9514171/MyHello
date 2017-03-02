@@ -1,6 +1,6 @@
 package codes.chia7712.hellodb.data;
 
-class SimpleCell implements Cell {
+public class SimpleCell implements Cell {
 
   private final byte[] rowArray;
   private final int rowOffset;
@@ -27,22 +27,19 @@ class SimpleCell implements Cell {
     this.valueOffset = valueOffset;
     this.valueLength = valueLength;
   }
-  
-  @Override
+
   public void setDataOffset(long dataOffset) {
     this.dataOffset = dataOffset;
   }
-  @Override
+
   public long getDataOffset() {
     return this.dataOffset;
   }
-  
-  @Override
+
   public void setDataLength(int dataLength) {
     this.dataLength = dataLength;
   }
-  
-  @Override
+
   public int getDataLength() {
     return this.dataLength;
   }

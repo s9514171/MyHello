@@ -27,15 +27,6 @@ public interface Cell {
             columnArray, columnOffset, columnLength,
             valueArray, valueOffset, valueLength);
   }
-
-  void setDataOffset(long dataOffset);
-  
-  long getDataOffset();
-  
-  void setDataLength(int dataLength);
-  
-  int getDataLength();
-  
   byte[] getRowArray();
 
   int getRowOffset();

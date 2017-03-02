@@ -3,6 +3,7 @@ package codes.chia7712.hellodb.admin;
 import codes.chia7712.hellodb.Table;
 import codes.chia7712.hellodb.data.Cell;
 import codes.chia7712.hellodb.data.CellComparator;
+import codes.chia7712.hellodb.data.SimpleCell;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -58,7 +59,7 @@ class SimpleAdmin implements Admin {
       raf.read(r);
       c = new byte[raf.readInt()];
       raf.read(c);
-      Cell newCell = Cell.createRowColumnOnly(r, c);
+      SimpleCell newCell = (SimpleCell) Cell.createRowColumnOnly(r, c);
       newCell.setDataOffset(raf.readLong());
       newCell.setDataLength(raf.readInt());
       table.putCell(newCell);
@@ -122,7 +123,7 @@ class SimpleAdmin implements Admin {
     private static final CellComparator CELL_COMPARATOR = new CellComparator();
     private final ConcurrentNavigableMap<Cell, Cell> data = new ConcurrentSkipListMap<>(CELL_COMPARATOR);
     private final String name;
-    private final HelloFile file = new HelloFile();
+    private static final HelloFile file = new HelloFile(); // write data
 
     SimpleTable(final String name) {
       this.name = name;
@@ -143,18 +144,18 @@ class SimpleAdmin implements Admin {
         cellOut.write(entry.getValue().getRowArray());
         cellOut.writeInt(entry.getValue().getColumnLength());
         cellOut.write(entry.getValue().getColumnArray());
-        cellOut.writeLong(entry.getValue().getDataOffset());
-        cellOut.writeInt(entry.getValue().getDataLength());
+        cellOut.writeLong(((SimpleCell)entry.getValue()).getDataOffset());
+        cellOut.writeInt(((SimpleCell)entry.getValue()).getDataLength());
       }
 
     }
 
     @Override
     public boolean insert(Cell cell) throws IOException {
-      Cell newCell = Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
+      SimpleCell newCell = (SimpleCell)Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
               Arrays.copyOfRange(cell.getColumnArray(), cell.getColumnOffset(), cell.getColumnOffset() + cell.getColumnLength()));
       newCell.setDataLength(cell.getValueLength());
-      newCell.setDataOffset(file.write(cell.getValueArray()));
+      newCell.setDataOffset(file.write(Arrays.copyOfRange(cell.getValueArray(), cell.getValueOffset(), cell.getValueOffset() + cell.getValueLength())));
 
       return data.put(newCell, newCell) != null;
 
@@ -180,8 +181,8 @@ class SimpleAdmin implements Admin {
         if (CellComparator.compareRow(entry.getKey(), rowOnlyCell) != 0) {
           break;
         } else {
-          byte[] b = new byte[entry.getValue().getDataLength()];
-          file.read(b, entry.getValue().getDataOffset());
+          byte[] b = new byte[((SimpleCell)entry.getValue()).getDataLength()];
+          file.read(b, ((SimpleCell)entry.getValue()).getDataOffset());
           Cell newCell = Cell.createCell(row, entry.getValue().getColumnArray(), b);
           rval.add(newCell);
         }
@@ -192,7 +193,7 @@ class SimpleAdmin implements Admin {
     @Override
     public Optional<Cell> get(byte[] row, byte[] column) throws IOException {
       if (Optional.ofNullable(data.get(Cell.createRowColumnOnly(row, column))).isPresent()) {
-        Cell cell = data.get(Cell.createRowColumnOnly(row, column));
+        SimpleCell cell = (SimpleCell)data.get(Cell.createRowColumnOnly(row, column));
         byte[] b = new byte[cell.getDataLength()];
         file.read(b, cell.getDataOffset());
         return Optional.ofNullable(Cell.createCell(cell.getRowArray(), cell.getColumnArray(), b));
@@ -208,12 +209,15 @@ class SimpleAdmin implements Admin {
 
     @Override
     public boolean insertIfAbsent(Cell cell) throws IOException {
-      Cell newCell = Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
+      SimpleCell newCell = (SimpleCell)Cell.createRowColumnOnly(Arrays.copyOfRange(cell.getRowArray(), cell.getRowOffset(), cell.getRowOffset() + cell.getRowLength()),
               Arrays.copyOfRange(cell.getColumnArray(), cell.getColumnOffset(), cell.getColumnOffset() + cell.getColumnLength()));
-      newCell.setDataLength(cell.getValueLength());
-      newCell.setDataOffset(file.write(cell.getValueArray()));
+      if (data.putIfAbsent(newCell, newCell) == null) {
+        newCell.setDataLength(cell.getValueLength());
+        newCell.setDataOffset(file.write(Arrays.copyOfRange(cell.getValueArray(), cell.getValueOffset(), cell.getValueOffset() + cell.getValueLength())));
+        return true;
+      }
 
-      return data.putIfAbsent(newCell, newCell) == null;
+      return false;
     }
 
     @Override
